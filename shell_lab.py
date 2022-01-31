@@ -3,4 +3,7 @@ import os
 import re 
 
 
-os.system("ls")
+while(True):
+    commandToExecute = input("\n$")
+    if commandToExecute == "exit":
+        break
