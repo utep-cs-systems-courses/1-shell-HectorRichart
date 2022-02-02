@@ -5,9 +5,9 @@ import re
 def main():
     #Printing prompt and reading command as long as user doesnt type exit
     while(True):
-        commandToExecute = input("\n$")
+        commandToExecute = input("$")
         if commandToExecute == "exit":
-            break
+            sys.exit(0)
         #Making sure the first 3 character of the command to read entered by the user is cd and a space
         elif commandToExecute[:3] == "cd ":
             #Executing the command input starting from position 3
