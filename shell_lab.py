@@ -1,6 +1,5 @@
 import sys 
 import os
-import re 
 
 def main():
     #Printing prompt and reading command as long as user doesnt type exit
