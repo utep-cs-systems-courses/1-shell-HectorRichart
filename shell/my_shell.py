@@ -25,12 +25,6 @@ def main():
         #     # os.write(1, ("$").encode())
         #     # commandToExecute = os.read(1,100).strip().split()[0]
 
-        #     # if commandToExecute.decode() == "exit":
-        #     #     sys.exit(0)
-            
-        #     # elif commandToExecute.decode() == "cd":
-        #     #     cd_command(commandToExecute.decode())
-                          
         #     # else:
         #     #     print(commandToExecute[0].decode()+ ": Command not found")
 
