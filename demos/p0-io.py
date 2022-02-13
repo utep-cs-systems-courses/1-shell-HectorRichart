@@ -9,7 +9,7 @@ fdIn = os.open("p0-io.py", os.O_RDONLY)
 print(f"fdIn={fdIn}, fdOut={fdOut}");
 
 # note that
-#  fd #0 is "standard input" (by default, attached to kbd)
+#  fd #0 is "standard input" (by default, attached to kbd) keyboard
 #  fd #1 is "standard ouput" (by default, attached to display)
 #  fd #2 is "standard error" (by default, attached to display for error output)
 
