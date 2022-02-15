@@ -26,21 +26,24 @@ def main():
             sys.exit(1)
                 
         #Executing in child process because rc == 0 by fork definition
-        elif rc == 0:
-            args = commandToExecute
-            #checking if the user input contains > which means redirect
-            if len(args) == 3 and args[1] == ">":
-                #redirect child stdout
-                os.close(1)             
-                #if specified file given by args[2] doers not exist create it or open to write only   
-                os.open(args[2], os.O_CREAT | os.O_WRONLY)
-                
+        elif rc == 0:           
+            if commandToExecute.__contains__(">"):
+                os.close(1)
+                os.open(commandToExecute[2], os.O_CREAT|os.O_WRONLY)
                 os.set_inheritable(1, True)
+                commandToExecute = commandToExecute[:1]
+                
+            elif commandToExecute.__contains__("<"):
+                os.close(0)
+                os.open(commandToExecute[2], os.O_RDONLY)
+                os.set_inheritable(0, True)
+                commandToExecute = commandToExecute[:1]
+                
             for dir in re.split(":", os.environ['PATH']):  # try each directory in the path
-                program = "%s/%s" % (dir, args[0])
+                program = "%s/%s" % (dir, commandToExecute[0])
                 #using execve command to run the program on the os environment
                 try:
-                    os.execve(program, args, os.environ)  # try to exec program
+                    os.execve(program, commandToExecute, os.environ)  # try to exec program
 
                 except FileNotFoundError:
                         pass           
@@ -48,6 +51,7 @@ def main():
     #wait for child to finish
         else: 
             childPidCode = os.wait()  
+         
             
 def cd_command(path):
     #if the len is > 1, will change to directory in index 1 of the command array 
@@ -64,3 +68,4 @@ def cd_command(path):
 
 if '__main__' == __name__:
     main()
+    
