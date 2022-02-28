@@ -18,7 +18,10 @@ def main():
          
         elif commandToExecute.__contains__("|"):
             pipe(commandToExecute)
-            
+        
+        elif commandToExecute.__contains__("&"):
+            run_background(commandToExecute)
+        
         elif commandToExecute[0] == "cd": 
             cd_command(commandToExecute)
             continue        
@@ -37,14 +40,14 @@ def main():
                 #If file specified in command[2] does not exist create it, otherwise write on it
                 os.open(commandToExecute[2], os.O_CREAT|os.O_WRONLY)
                 os.set_inheritable(1, True) #inheriting with flag code 1
-                commandToExecute = commandToExecute[:1]
+                commandToExecute = commandToExecute[:1] 
                 
             #Checking if input redirection
             elif commandToExecute.__contains__("<"):
                 os.close(0) #close stdin
                 #opening specified file to read only
                 os.open(commandToExecute[2], os.O_RDONLY)
-                os.set_inheritable(0, True)
+                os.set_inheritable(0, True) #can inherit by child process, child will have same file descript as parent
                 commandToExecute = commandToExecute[:1]
             
             execute(commandToExecute)
@@ -60,14 +63,15 @@ def execute(path):
         # Obtain the program
         program = "%s/%s" % (dir, path[0])
         try:
-            # Attemp to execute program, command at positon 0 of user input
-            os.execve(program, path, os.environ)
+            # Attemp to execute program, command at positon 0 of user input, use path
+            os.execve(program, path, os.environ) #execve replaces memory of the current process
         except FileNotFoundError:
-            # Fail quitely lol
             pass                          
-    # Terminate with error
     sys.exit(1)         
-  
+ 
+ 
+#def run_background(command):
+
             
 def cd_command(path):
     #if the len is > 1, will change to directory in index 1 of the command array 
@@ -81,39 +85,51 @@ def cd_command(path):
     else:
        os.chdir(os.path.expanduser("~"))   
 
-def pipe_helper(pr, pw, program, fd_type):
-    # Checks for what to duplicate
-    dup_this = pw if fd_type == 1 else pr
+def pipe(command):
+    pr, pw = os.pipe()
+    rc_1 = os.fork()
 
-    #closing pipe depending on file descriptor 
-    os.close(fd_type)
-    #duplicates the corresponding pipe depending on file descriptor
-    os.dup(dup_this)
-    os.set_inheritable(fd_type, True)
-
-    for file_descriptor in (pr, pw):
-        execute(program)
-    #sys.exit(1)
-
-def pipe(path):
-    pipe_split_index = path.index("|")
-    write = path[0:pipe_split_index] #taking left side of the pipe (output used to write to pipe)
-    read = path[pipe_split_index + 1:] #taking right side of the pipe (command to execute )
-    pipe_read, pipe_write = os.pipe()#Creating a pipe for read and write 
-
-    rc = os.fork()
-
-    # This is the child (write side of pipe)~
-    if rc == 0:
-        pipe_helper(pipe_read, pipe_write, write, 1)
-
-    # This is the child (read side of pipe)~
-    elif rc > 0:
-        pipe_helper(pipe_read, pipe_write, read, 0)
-
-    else:
+    if rc_1 < 0:
         sys.exit(1)
+
+    elif rc_1 == 0: # writing
+        os.close(1) # close standard output
+        os.dup(pw)
+        os.set_inheritable(1, True)
+
+        for fd in (pr, pw):
+            os.close(fd)
+
+        user_input = command[0:command.index("|")]
+        execute(user_input)
+        sys.exit(1)
+
+    else: # reading
+        rc_2 = os.fork()
+
+        if rc_2 < 0: # fork failed
+            sys.exit(1)
+
+        elif rc_2 == 0:  # reading
+            os.close(0) # close standard input
+            os.dup(pr)
+            os.set_inheritable(0, True)
+
+            for fd in (pr, pw):
+                os.close(fd)
+
+            user_input = command[command.index("|") + 1:]
+            execute(user_input)
+            sys.exit(1)
+        else:
+            childPidCode = os.wait()
+        for fd in (pr, pw):
+            os.close(fd)
+        childPidCode = os.wait()
+
 
 if '__main__' == __name__:
     main()
     
+    
+#missing background tasks, os.wait(), if user pass & call, parent will keep asking for input while chld is running in background
