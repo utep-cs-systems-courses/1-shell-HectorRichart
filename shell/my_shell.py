@@ -5,6 +5,8 @@ import sys
 import os
 import re 
 
+
+#PUSH CODE TO REPO
 def main():
     while True:
         #splitting user input, making it an array, printing prompt
@@ -19,42 +21,39 @@ def main():
         elif commandToExecute.__contains__("|"):
             pipe(commandToExecute)
         
-        elif commandToExecute.__contains__("&"):
-            run_background(commandToExecute)
-        
         elif commandToExecute[0] == "cd": 
             cd_command(commandToExecute)
             continue        
-          
-        #Fork a child, check if correctly forked    
-        rc = os.fork()
-            
-        if rc < 0:
-            sys.exit(1)
+        else:
+            #Fork a child, check if correctly forked    
+            rc = os.fork()
                 
-        #Executing in child process because rc == 0 by fork definition
-        elif rc == 0:           
-            #Checking If output redirection
-            if commandToExecute.__contains__(">"):
-                os.close(1) #close stdout
-                #If file specified in command[2] does not exist create it, otherwise write on it
-                os.open(commandToExecute[2], os.O_CREAT|os.O_WRONLY)
-                os.set_inheritable(1, True) #inheriting with flag code 1
-                commandToExecute = commandToExecute[:1] 
+            if rc < 0:
+                sys.exit(1)
+                    
+            #Executing in child process because rc == 0 by fork definition
+            elif rc == 0:           
+                #Checking If output redirection
+                if commandToExecute.__contains__(">"):
+                    os.close(1) #close stdout
+                    #If file specified in command[2] does not exist create it, otherwise write on it
+                    os.open(commandToExecute[2], os.O_CREAT|os.O_WRONLY)
+                    os.set_inheritable(1, True) #inheriting with flag code 1
+                    commandToExecute = commandToExecute[:1] 
+                    
+                #Checking if input redirection
+                elif commandToExecute.__contains__("<"):
+                    os.close(0) #close stdin
+                    #opening specified file to read only
+                    os.open(commandToExecute[2], os.O_RDONLY)
+                    os.set_inheritable(0, True) #can inherit by child process, child will have same file descript as parent
+                    commandToExecute = commandToExecute[:1]
                 
-            #Checking if input redirection
-            elif commandToExecute.__contains__("<"):
-                os.close(0) #close stdin
-                #opening specified file to read only
-                os.open(commandToExecute[2], os.O_RDONLY)
-                os.set_inheritable(0, True) #can inherit by child process, child will have same file descript as parent
-                commandToExecute = commandToExecute[:1]
-            
-            execute(commandToExecute)
- 
-    #wait for child to finish
-        else: 
-            childPidCode = os.wait()  
+                execute(commandToExecute)
+    
+        #wait for child to finish
+            else: 
+                childPidCode = os.wait()  
   
 #helper funtion that takes care of executing the program  
 def execute(path):
@@ -67,10 +66,8 @@ def execute(path):
             os.execve(program, path, os.environ) #execve replaces memory of the current process
         except FileNotFoundError:
             pass                          
-    sys.exit(1)         
- 
- 
-#def run_background(command):
+    sys.exit(1) 
+
 
             
 def cd_command(path):
@@ -86,14 +83,14 @@ def cd_command(path):
        os.chdir(os.path.expanduser("~"))   
 
 def pipe(command):
-    pr, pw = os.pipe()
+    pr, pw = os.pipe() #two pipes are needed to establish two way communication
     rc_1 = os.fork()
 
     if rc_1 < 0:
         sys.exit(1)
 
     elif rc_1 == 0: # writing
-        os.close(1) # close standard output
+        os.close(1) # close standard output, parent write, child read
         os.dup(pw)
         os.set_inheritable(1, True)
 
@@ -105,7 +102,7 @@ def pipe(command):
         sys.exit(1)
 
     else: # reading
-        rc_2 = os.fork()
+        rc_2 = os.fork() #parent read, child write
 
         if rc_2 < 0: # fork failed
             sys.exit(1)
@@ -131,5 +128,3 @@ def pipe(command):
 if '__main__' == __name__:
     main()
     
-    
-#missing background tasks, os.wait(), if user pass & call, parent will keep asking for input while chld is running in background
